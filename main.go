@@ -70,6 +70,12 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	getURL("winbox4_windows")
 
 	html := `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WinboxGet</title>
+  <meta charset="UTF-8">
+</head>
 <style>
   body {
     font-family: system-ui, sans-serif;
@@ -98,7 +104,6 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
   }
   a:hover { background: #e9f3ff; border-color: #bcdcff; }
 </style>
-
 <h1>Winboxget</h1>
 <ul>
   <li><a href="/winbox4/windows">Winbox 4 (Windows) - v%v</a></li>
@@ -117,19 +122,18 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		extractVersion(cache["winbox3_windows_32"]),
 	)))
 	w.Write([]byte(`
-
 <div style="font-size: 0.8rem; color: #555; margin-top: 2rem;">
   <hr>
   <p><strong>Legendary Legal Disclaimer</strong></p>
   <p>
     This site is an unofficial convenience tool for downloading Winbox.  
     It is <strong>not</strong> created by, endorsed by, sponsored by, or in any way
-    affiliated with <strong>MikroTik SIA</strong>. They probably don't even know this page exists,
+    affiliated with <strong>SIA Mikrotīkls</strong>. They probably don't even know this page exists,
     and if they do, <i> hello there</i>
   </p>
   <p>
     Winbox, MikroTik, and any related names or logos are trademarks or registered
-    trademarks of <strong>MikroTik SIA</strong>. All rights belong to their respective owners.
+    trademarks of <strong>SIA Mikrotīkls</strong>. All rights belong to their respective owners.
   </p>
   <p>
     This site comes with absolutely <strong>no warranty</strong> of any kind whatsoever.  
@@ -178,8 +182,18 @@ fetch("/counter")
     color:#888;
     letter-spacing:0.5px;
 ">
-&#169;<span style="font-weight:600;">nugge boman (nugge (a) nugge.fi)</span> - All vibes reserved.
+&#169; <span style="font-weight:600;">nugge boman (nugge (a) nugge.fi)</span> - All vibes reserved.
 </p>
+<p style="text-align:center; margin-top:1.5rem;">
+  <a href="https://github.com/nuggex/winboxget"
+     target="_blank"
+     rel="noopener noreferrer"
+     style="text-decoration:none; font-size:0.9rem;">
+    <span style="font-size:1.2rem; vertical-align:middle;">🐙</span>
+    <span style="vertical-align:middle;">View on GitHub</span>
+  </a>
+</p>
+</html>
 	`))
 }
 
