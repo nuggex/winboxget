@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -15,11 +18,14 @@ var (
 	cache      map[string]string
 	cacheExp   time.Time
 	cacheMutex sync.Mutex
+	visits     uint64
 )
+
+const counterFile = "/data/counter.txt"
 
 func main() {
 	cache = make(map[string]string)
-
+	loadCounter()
 	http.HandleFunc("/", handleIndex)
 	// Winbox 4
 	http.HandleFunc("/winbox4/windows", wrap("winbox4_windows"))
@@ -28,11 +34,36 @@ func main() {
 	// Winbox 3
 	http.HandleFunc("/winbox3/windows", wrap("winbox3_windows"))
 	http.HandleFunc("/winbox3/windows32", wrap("winbox3_windows_32"))
+	// visitcounter
+	http.HandleFunc("/counter", counterHandler)
 
 	log.Println("Listening on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
+func counterHandler(w http.ResponseWriter, r *http.Request) {
+	n := atomic.AddUint64(&visits, 1)
+	saveCounter()
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte(fmt.Sprintf("%d", n)))
+}
+
+func loadCounter() {
+	data, err := os.ReadFile(counterFile)
+	if err != nil {
+		return // no file yet, starts at 0
+	}
+
+	n, err := strconv.ParseUint(strings.TrimSpace(string(data)), 10, 64)
+	if err == nil {
+		atomic.StoreUint64(&visits, n)
+	}
+}
+func saveCounter() {
+	n := atomic.LoadUint64(&visits)
+	os.WriteFile(counterFile, []byte(fmt.Sprintf("%d", n)), 0644)
+}
 func handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	// preload cache for version extraction
@@ -86,6 +117,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		extractVersion(cache["winbox3_windows_32"]),
 	)))
 	w.Write([]byte(`
+
 <div style="font-size: 0.8rem; color: #555; margin-top: 2rem;">
   <hr>
   <p><strong>Legendary Legal Disclaimer</strong></p>
@@ -120,8 +152,34 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
       https://mikrotik.com
     </a>
   </p>
+<p><i>P.S. The official WinBox download is a 4-click adventure. 5 including your click to mikrotik.com.
+6 if you miss-click. (You will.)</i></p>
 </div>
+<p id="counter" style="text-align:center;color:#777;font-size:0.9rem;">
+  Loading visitors…
+</p>
 
+<script>
+fetch("/counter")
+  .then(r => r.text())
+  .then(n => {
+    document.getElementById("counter").textContent =
+      "You are visitor number:  " + n;
+  })
+  .catch(() => {
+    document.getElementById("counter").textContent =
+      "Visitors: unavailable";
+  });
+</script>
+<p style="
+    text-align:center;
+    margin-top:2rem;
+    font-size:0.85rem;
+    color:#888;
+    letter-spacing:0.5px;
+">
+&#169;<span style="font-weight:600;">nugge boman (nugge (a) nugge.fi)</span> - All vibes reserved.
+</p>
 	`))
 }
 
