@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -34,7 +35,10 @@ func main() {
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
-	w.Write([]byte(`
+	// preload cache for version extraction
+	getURL("winbox4_windows")
+
+	html := `
 <style>
   body {
     font-family: system-ui, sans-serif;
@@ -44,23 +48,13 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
     max-width: 600px;
     margin: auto;
   }
-
   h1 {
     text-align: center;
     color: #222;
     margin-bottom: 1.5rem;
   }
-
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  ul li {
-    margin: 0.6rem 0;
-  }
-
+  ul { list-style: none; padding: 0; margin: 0; }
+  ul li { margin: 0.6rem 0; }
   a {
     display: block;
     padding: 0.8rem 1rem;
@@ -71,20 +65,27 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
     color: #0074d9;
     transition: all 0.15s ease-in-out;
   }
-
-  a:hover {
-    background: #e9f3ff;
-    border-color: #bcdcff;
-  }
+  a:hover { background: #e9f3ff; border-color: #bcdcff; }
 </style>
-		<h1>Winboxget</h1>
-		<ul>
-			<li><a href="/winbox4/windows">Winbox 4 (Windows)</a></li>
-			<li><a href="/winbox4/mac">Winbox 4 (Mac)</a></li>
-			<li><a href="/winbox4/linux">Winbox 4 (Linux)</a></li>
-			<li><a href="/winbox3/windows">Winbox 3 x64 (Windows)</a></li>
-			<li><a href="/winbox3/windows32">Winbox 3 32-bit (Windows)</a></li>
-		</ul>
+
+<h1>Winboxget</h1>
+<ul>
+  <li><a href="/winbox4/windows">Winbox 4 (Windows) - v%v</a></li>
+  <li><a href="/winbox4/mac">Winbox 4 (Mac) - v%v</a></li>
+  <li><a href="/winbox4/linux">Winbox 4 (Linux) - v%v</a></li>
+  <li><a href="/winbox3/windows">Winbox 3 x64 (Windows) - v%v</a></li>
+  <li><a href="/winbox3/windows32">Winbox 3 32-bit (Windows) - v%v</a></li>
+</ul>
+`
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(fmt.Sprintf(html,
+		extractVersion(cache["winbox4_windows"]),
+		extractVersion(cache["winbox4_mac"]),
+		extractVersion(cache["winbox4_linux"]),
+		extractVersion(cache["winbox3_windows"]),
+		extractVersion(cache["winbox3_windows_32"]),
+	)))
+	w.Write([]byte(`
 <div style="font-size: 0.8rem; color: #555; margin-top: 2rem;">
   <hr>
   <p><strong>Legendary Legal Disclaimer</strong></p>
@@ -107,8 +108,8 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
     By using this site, you agree that:
     <ul>
     <li> You receive <strong>no license</strong> to any MikroTik software from here.</li>  
-    <li> All downloads remain subject to MikroTik’s original terms.</li>  
-    <li> If something breaks, crashes, explodes, or starts speaking in tongues… that is 100% on you.</li>  
+    <li> All downloads remain subject to MikroTik's original terms.</li>  
+    <li> If something breaks, crashes, explodes, or starts speaking in tongues, that is 100% on you.</li>  
     <li> <strong>nugge cannot be blamed for lost limbs, missing fingers, damaged routers,  
       corrupted configs, emotional distress, or unexpected portal openings.</strong></li>
     </ul>
@@ -137,13 +138,7 @@ func wrap(key string) http.HandlerFunc {
 
 func extractVersion(url string) string {
 	parts := strings.Split(url, "/")
-	for i := range parts {
-		// winbox version directories are always like: 3.43, 4.0beta4, etc
-		if strings.Count(parts[i], ".") >= 1 && !strings.HasSuffix(parts[i], ".exe") {
-			return parts[i]
-		}
-	}
-	return "unknown"
+	return parts[5]
 }
 
 func getURL(key string) (string, error) {
