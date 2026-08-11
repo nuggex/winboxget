@@ -31,9 +31,7 @@ func main() {
 	http.HandleFunc("/winbox4/windows", wrap("winbox4_windows"))
 	http.HandleFunc("/winbox4/mac", wrap("winbox4_mac"))
 	http.HandleFunc("/winbox4/linux", wrap("winbox4_linux"))
-	// Winbox 3
-	http.HandleFunc("/winbox3/windows", wrap("winbox3_windows"))
-	http.HandleFunc("/winbox3/windows32", wrap("winbox3_windows_32"))
+	http.HandleFunc("/winbox4/windowsarm64", wrap("winbox4_windows_arm64"))
 	// visitcounter
 	http.HandleFunc("/counter", counterHandler)
 
@@ -109,8 +107,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
   <li><a href="/winbox4/windows">Winbox 4 (Windows) - v%v</a></li>
   <li><a href="/winbox4/mac">Winbox 4 (Mac) - v%v</a></li>
   <li><a href="/winbox4/linux">Winbox 4 (Linux) - v%v</a></li>
-  <li><a href="/winbox3/windows">Winbox 3 x64 (Windows) - v%v</a></li>
-  <li><a href="/winbox3/windows32">Winbox 3 32-bit (Windows) - v%v</a></li>
+  <li><a href="/winbox4/windowsarm64">Winbox 4 arm64 (Windows) - v%v</a></li>
 </ul>
 `
 	w.Header().Set("Content-Type", "text/html")
@@ -118,8 +115,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		extractVersion(cache["winbox4_windows"]),
 		extractVersion(cache["winbox4_mac"]),
 		extractVersion(cache["winbox4_linux"]),
-		extractVersion(cache["winbox3_windows"]),
-		extractVersion(cache["winbox3_windows_32"]),
+		extractVersion(cache["winbox4_windows_arm64"]),
 	)))
 	w.Write([]byte(`
 <div style="font-size: 0.8rem; color: #555; margin-top: 2rem;">
@@ -210,7 +206,10 @@ func wrap(key string) http.HandlerFunc {
 
 func extractVersion(url string) string {
 	parts := strings.Split(url, "/")
-	return parts[5]
+	if parts[5] != "" {
+		return parts[5]
+	}
+	return ""
 }
 
 func getURL(key string) (string, error) {
@@ -267,16 +266,16 @@ func scrape() (map[string]string, error) {
 		if strings.Contains(l, "winbox") || strings.Contains(l, "WinBox") {
 			full := href
 			switch {
-			case strings.Contains(l, "winbox_windows"):
+			case strings.Contains(l, "winbox_windows.zip"):
 				results["winbox4_windows"] = full
 			case strings.Contains(l, "winbox") && strings.Contains(l, ".dmg"):
 				results["winbox4_mac"] = full
 			case strings.Contains(l, "winbox_linux"):
 				results["winbox4_linux"] = full
-			case strings.Contains(l, "winbox64") && strings.Contains(l, ".exe"):
-				results["winbox3_windows"] = full
-			case strings.Contains(l, "winbox.exe"):
-				results["winbox3_windows_32"] = full
+			case strings.Contains(l, "winbox_windows_arm64.zip"):
+				results["winbox4_windows_arm64"] = full
+			default:
+
 			}
 		}
 	})
